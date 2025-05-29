@@ -38,11 +38,15 @@ function exportarExcel() {
     alert("Archivo exportado y datos reiniciados.");
 }
 
-const html5QrCode = new Html5Qrcode("reader");
 Html5Qrcode.getCameras().then(devices => {
     if (devices && devices.length) {
+        // Buscar cámara trasera
+        let backCamera = devices.find(device =>
+            /back|rear|environment/i.test(device.label)
+        ) || devices[0]; // fallback: la primera si no encuentra otra
+
         html5QrCode.start(
-            devices[0].id,
+            backCamera.id,
             { fps: 10, qrbox: 250 },
             qrCodeMessage => {
                 document.getElementById("serie").value = qrCodeMessage;

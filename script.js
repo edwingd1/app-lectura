@@ -38,19 +38,40 @@ function exportarExcel() {
     alert("Archivo exportado y datos reiniciados.");
 }
 
-const html5QrCode = new Html5Qrcode("reader");
-Html5Qrcode.getCameras().then(devices => {
-    if (devices && devices.length) {
-        html5QrCode.start(
-            devices[0].id,
-            { fps: 10, qrbox: 250 },
-            qrCodeMessage => {
-                document.getElementById("serie").value = qrCodeMessage;
+let scannerActive = false;
+
+function toggleScanner() {
+    if (scannerActive) {
+        Quagga.stop();
+        scannerActive = false;
+    } else {
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner'),
+                constraints: {
+                    facingMode: "environment" // cámara trasera
+                },
+            },
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "code_39_reader"]
             }
-        ).catch(err => {
-            console.error("Error al iniciar escáner:", err);
+        }, function (err) {
+            if (err) {
+                console.error(err);
+                alert("Error al iniciar Quagga.");
+                return;
+            }
+            Quagga.start();
+            scannerActive = true;
+        });
+
+        Quagga.onDetected(data => {
+            const code = data.codeResult.code;
+            document.getElementById("serie").value = code;
+            Quagga.stop(); // detener escaneo tras lectura exitosa
+            scannerActive = false;
         });
     }
-}).catch(err => {
-    console.error("No se pudo acceder a la cámara:", err);
-});
+}

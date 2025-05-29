@@ -1,8 +1,4 @@
 let registros = JSON.parse(localStorage.getItem("registros") || "[]");
-let html5QrCode = null;
-let currentCameraId = null;
-let availableCameras = [];
-let cameraIndex = 0;
 
 function guardarRegistro() {
     const serie = document.getElementById("serie").value.trim();
@@ -42,56 +38,19 @@ function exportarExcel() {
     alert("Archivo exportado y datos reiniciados.");
 }
 
-function startCamera(cameraId) {
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            html5QrCode.start(
-                cameraId,
-                { fps: 10, qrbox: 250 },
-                qrCodeMessage => {
-                    document.getElementById("serie").value = qrCodeMessage;
-                }
-            );
-        }).catch(err => console.error("Error al detener la cámara:", err));
-    } else {
-        html5QrCode = new Html5Qrcode("reader");
+const html5QrCode = new Html5Qrcode("reader");
+Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
         html5QrCode.start(
-            cameraId,
+            devices[0].id,
             { fps: 10, qrbox: 250 },
             qrCodeMessage => {
                 document.getElementById("serie").value = qrCodeMessage;
             }
         ).catch(err => {
-            console.error("Error al iniciar la cámara:", err);
-            alert("No se pudo iniciar el escáner.");
+            console.error("Error al iniciar escáner:", err);
         });
     }
-    currentCameraId = cameraId;
-}
-
-function switchCamera() {
-    if (availableCameras.length > 1) {
-        cameraIndex = (cameraIndex + 1) % availableCameras.length;
-        startCamera(availableCameras[cameraIndex].id);
-    } else {
-        alert("Solo hay una cámara disponible.");
-    }
-}
-
-window.onload = () => {
-    html5QrCode = new Html5Qrcode("reader");
-    Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length > 0) {
-            availableCameras = devices;
-            cameraIndex = devices.findIndex(device => /back|rear|environment/i.test(device.label));
-            if (cameraIndex === -1) cameraIndex = 0;
-            startCamera(devices[cameraIndex].id);
-        } else {
-            alert("No se detectaron cámaras.");
-        }
-    }).catch(err => {
-        console.error("Error al obtener las cámaras:", err);
-        alert("No se pudo acceder a la cámara.");
-    });
-};
+}).catch(err => {
+    console.error("No se pudo acceder a la cámara:", err);
+});

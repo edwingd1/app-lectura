@@ -39,32 +39,18 @@ function exportarExcel() {
 }
 
 const html5QrCode = new Html5Qrcode("reader");
-
 Html5Qrcode.getCameras().then(devices => {
-    if (!devices || devices.length === 0) {
-        alert("No se encontraron cámaras.");
-        return;
+    if (devices && devices.length) {
+        html5QrCode.start(
+            devices[0].id,
+            { fps: 10, qrbox: 250 },
+            qrCodeMessage => {
+                document.getElementById("serie").value = qrCodeMessage;
+            }
+        ).catch(err => {
+            console.error("Error al iniciar escáner:", err);
+        });
     }
-
-    // Intentar encontrar la cámara trasera
-    let backCamera = devices.find(device =>
-        /back|rear|environment/i.test(device.label)
-    ) || devices[devices.length - 1]; // usar la última como respaldo
-
-    html5QrCode.start(
-        backCamera.id,
-        { fps: 10, qrbox: 250 },
-        qrCodeMessage => {
-            document.getElementById("serie").value = qrCodeMessage;
-        },
-        errorMessage => {
-            console.warn("Error de escaneo:", errorMessage);
-        }
-    ).catch(err => {
-        console.error("Error al iniciar el escáner:", err);
-        alert("No se pudo iniciar la cámara. Verifica los permisos.");
-    });
 }).catch(err => {
-    console.error("Error al obtener cámaras:", err);
-    alert("No se pudo acceder a la cámara. Verifica permisos.");
+    console.error("No se pudo acceder a la cámara:", err);
 });

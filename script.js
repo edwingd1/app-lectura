@@ -1,28 +1,25 @@
-let registros = [];
-let serie = "";
+let registros = JSON.parse(localStorage.getItem("registros") || "[]");
 
-document.getElementById("formulario").addEventListener("submit", function(e) {
-    e.preventDefault();
+function guardarRegistro() {
+    const serie = document.getElementById("serie").value.trim();
+    const activa = parseFloat(document.getElementById("activa").value);
+    const potencia = parseFloat(document.getElementById("potencia").value);
+    const reactiva = parseFloat(document.getElementById("reactiva").value);
 
-    if (!serie) {
-        alert("Primero escanea una Serie");
+    if (!serie || isNaN(activa) || isNaN(potencia) || isNaN(reactiva)) {
+        alert("Por favor completa todos los campos correctamente.");
         return;
     }
 
-    let activa = parseFloat(document.getElementById("activa").value);
-    let potencia = parseFloat(document.getElementById("potencia").value);
-    let reactiva = parseFloat(document.getElementById("reactiva").value);
-
     registros.push([serie, activa, potencia, reactiva]);
-
     localStorage.setItem("registros", JSON.stringify(registros));
 
-    alert("Guardado correctamente");
-    document.getElementById("formulario").reset();
-    serie = "";
-    document.getElementById("serie").innerText = "";
-    startScanner(); // vuelve a escanear
-});
+    document.getElementById("serie").value = "";
+    document.getElementById("activa").value = "";
+    document.getElementById("potencia").value = "";
+    document.getElementById("reactiva").value = "";
+    document.getElementById("serie").focus();
+}
 
 function exportarExcel() {
     const nombre = prompt("Nombre del archivo (sin extensión):", "registros");
@@ -34,30 +31,26 @@ function exportarExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Registros");
 
     XLSX.writeFile(wb, nombre + ".xlsx");
+
+    registros = [];
+    localStorage.removeItem("registros");
+
+    alert("Archivo exportado y datos reiniciados.");
 }
 
-function startScanner() {
-    const scanner = new Html5Qrcode("reader");
-    scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-            serie = decodedText;
-            document.getElementById("serie").innerText = decodedText;
-            scanner.stop();
-        }
-    );
-}
-
-// Cargar registros desde localStorage al iniciar
-window.onload = () => {
-    const guardados = localStorage.getItem("registros");
-    if (guardados) {
-        registros = JSON.parse(guardados);
+const html5QrCode = new Html5Qrcode("reader");
+Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+        html5QrCode.start(
+            devices[0].id,
+            { fps: 10, qrbox: 250 },
+            qrCodeMessage => {
+                document.getElementById("serie").value = qrCodeMessage;
+            }
+        ).catch(err => {
+            console.error("Error al iniciar escáner:", err);
+        });
     }
-    startScanner();
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js');
-    }
-};
+}).catch(err => {
+    console.error("No se pudo acceder a la cámara:", err);
+});

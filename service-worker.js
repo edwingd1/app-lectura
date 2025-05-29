@@ -1,14 +1,20 @@
-const CACHE_NAME = 'registro-offline-cache-v1';
-const urlsToCache = ['/', '/index.html', '/script.js', '/manifest.json'];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+self.addEventListener("install", function(e) {
+  e.waitUntil(
+    caches.open("lectura-cache").then(function(cache) {
+      return cache.addAll([
+        "./",
+        "./index.html",
+        "./script.js",
+        "./manifest.json"
+      ]);
+    })
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
+self.addEventListener("fetch", function(e) {
+  e.respondWith(
+    caches.match(e.request).then(function(response) {
+      return response || fetch(e.request);
+    })
   );
 });

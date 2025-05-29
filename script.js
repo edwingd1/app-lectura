@@ -38,23 +38,33 @@ function exportarExcel() {
     alert("Archivo exportado y datos reiniciados.");
 }
 
-Html5Qrcode.getCameras().then(devices => {
-    if (devices && devices.length) {
-        // Buscar cámara trasera
-        let backCamera = devices.find(device =>
-            /back|rear|environment/i.test(device.label)
-        ) || devices[0]; // fallback: la primera si no encuentra otra
+const html5QrCode = new Html5Qrcode("reader");
 
-        html5QrCode.start(
-            backCamera.id,
-            { fps: 10, qrbox: 250 },
-            qrCodeMessage => {
-                document.getElementById("serie").value = qrCodeMessage;
-            }
-        ).catch(err => {
-            console.error("Error al iniciar escáner:", err);
-        });
+Html5Qrcode.getCameras().then(devices => {
+    if (!devices || devices.length === 0) {
+        alert("No se encontraron cámaras.");
+        return;
     }
+
+    // Intentar encontrar la cámara trasera
+    let backCamera = devices.find(device =>
+        /back|rear|environment/i.test(device.label)
+    ) || devices[devices.length - 1]; // usar la última como respaldo
+
+    html5QrCode.start(
+        backCamera.id,
+        { fps: 10, qrbox: 250 },
+        qrCodeMessage => {
+            document.getElementById("serie").value = qrCodeMessage;
+        },
+        errorMessage => {
+            console.warn("Error de escaneo:", errorMessage);
+        }
+    ).catch(err => {
+        console.error("Error al iniciar el escáner:", err);
+        alert("No se pudo iniciar la cámara. Verifica los permisos.");
+    });
 }).catch(err => {
-    console.error("No se pudo acceder a la cámara:", err);
+    console.error("Error al obtener cámaras:", err);
+    alert("No se pudo acceder a la cámara. Verifica permisos.");
 });

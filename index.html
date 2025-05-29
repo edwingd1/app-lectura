@@ -14,43 +14,37 @@
             max-width: 500px;
             margin: auto;
         }
-
-        input[type="number"], button {
+        input, button {
             font-size: 1.5em;
             padding: 0.6em;
             margin-top: 1em;
             width: 100%;
             box-sizing: border-box;
         }
-
         #reader {
             margin-bottom: 1em;
         }
-
         h1 {
             text-align: center;
         }
-
-        #serie {
-            font-size: 1.2em;
-            color: darkgreen;
+        #serie-label {
+            margin-top: 1em;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>Registro Offline</h1>
+    <h1>Registro de Lecturas</h1>
+    <div id="reader" style="width: 100%;"></div>
 
-    <div id="reader" style="width:300px;"></div>
-    <p><strong>Serie:</strong> <span id="serie"></span></p>
+    <label id="serie-label" for="serie">Serie:</label>
+    <input type="text" id="serie" placeholder="Escanea o escribe la serie manualmente">
 
-    <form id="formulario">
-        <input type="number" step="any" id="activa" placeholder="Activa kWh" required><br>
-        <input type="number" step="any" id="potencia" placeholder="Potencia kW" required><br>
-        <input type="number" step="any" id="reactiva" placeholder="Reactiva kVARh" required><br>
-        <button type="submit">Guardar</button>
-    </form>
+    <input type="number" id="activa" step="any" placeholder="Activa kWh">
+    <input type="number" id="potencia" step="any" placeholder="Potencia kW">
+    <input type="number" id="reactiva" step="any" placeholder="Reactiva kVARh">
 
-    <br>
+    <button onclick="guardarRegistro()">Guardar</button>
     <button onclick="exportarExcel()">Exportar a Excel</button>
 
     <script src="script.js"></script>

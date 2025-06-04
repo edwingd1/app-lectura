@@ -1,5 +1,5 @@
 {
-  "name": "Registro Offline",
+  "name": "Lectura ACE",
   "short_name": "Registro",
   "start_url": ".",
   "scope": "./",
@@ -12,6 +12,5 @@
       "sizes": "192x192",
       "type": "image/png"
     }
-  ],
-  "description": "Aplicación para toma de lectura de medidores de energía eléctrica en terreno."
+  ]
 }

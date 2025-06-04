@@ -1,77 +1,78 @@
-let registros = JSON.parse(localStorage.getItem("registros") || "[]");
+let registros = [];
+let scanner;
 
-function guardarRegistro() {
-    const serie = document.getElementById("serie").value.trim();
-    const activa = parseFloat(document.getElementById("activa").value);
-    const potencia = parseFloat(document.getElementById("potencia").value);
-    const reactiva = parseFloat(document.getElementById("reactiva").value);
+// Inicializar el escáner y Service Worker al cargar
+window.onload = () => {
+  const guardados = localStorage.getItem("registros");
+  if (guardados) {
+    registros = JSON.parse(guardados);
+  }
+  startScanner();
 
-    if (!serie || isNaN(activa) || isNaN(potencia) || isNaN(reactiva)) {
-        alert("Por favor completa todos los campos correctamente.");
-        return;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+};
+
+// Escanear Serie con Html5Qrcode
+function startScanner() {
+  const reader = new Html5Qrcode("reader");
+  reader.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      document.getElementById("serie-input").value = decodedText;
+      reader.stop();
+    },
+    (errorMessage) => {
+      // Silencio: no queremos spam de errores
     }
-
-    registros.push([serie, activa, potencia, reactiva]);
-    localStorage.setItem("registros", JSON.stringify(registros));
-
-    document.getElementById("serie").value = "";
-    document.getElementById("activa").value = "";
-    document.getElementById("potencia").value = "";
-    document.getElementById("reactiva").value = "";
-    document.getElementById("serie").focus();
+  ).catch(err => {
+    console.error("Error al iniciar el escáner:", err);
+  });
 }
 
-function exportarExcel() {
-    const nombre = prompt("Nombre del archivo (sin extensión):", "registros");
-    if (!nombre) return;
+// Guardar fila al enviar el formulario
+document.getElementById("formulario").addEventListener("submit", function(e) {
+  e.preventDefault();
 
-    const data = [["Serie", "Activa kWh", "Potencia kW", "Reactiva kVARh"], ...registros];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Registros");
+  const serie = document.getElementById("serie-input").value.trim();
+  if (!serie) {
+    alert("Por favor ingresa o escanea la Serie.");
+    return;
+  }
 
-    XLSX.writeFile(wb, nombre + ".xlsx");
+  const activa = parseFloat(document.getElementById("activa").value);
+  const potencia = parseFloat(document.getElementById("potencia").value) || 0;
+  const reactiva = parseFloat(document.getElementById("reactiva").value) || 0;
 
-    registros = [];
-    localStorage.removeItem("registros");
+  registros.push([serie, activa, potencia, reactiva]);
+  localStorage.setItem("registros", JSON.stringify(registros));
 
-    alert("Archivo exportado y datos reiniciados.");
-}
+  alert("Lectura guardada.");
+  this.reset();
+  document.getElementById("serie-input").value = "";
+  startScanner();
+});
 
-let scannerActive = false;
+// Exportar a Excel
+document.getElementById("exportar-btn").addEventListener("click", () => {
+  if (registros.length === 0) {
+    alert("No hay datos para exportar.");
+    return;
+  }
 
-function toggleScanner() {
-    if (scannerActive) {
-        Quagga.stop();
-        scannerActive = false;
-    } else {
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.querySelector('#scanner'),
-                constraints: {
-                    facingMode: "environment" // cámara trasera
-                },
-            },
-            decoder: {
-                readers: ["code_128_reader", "ean_reader", "code_39_reader"]
-            }
-        }, function (err) {
-            if (err) {
-                console.error(err);
-                alert("Error al iniciar Quagga.");
-                return;
-            }
-            Quagga.start();
-            scannerActive = true;
-        });
+  const nombre = prompt("Nombre del archivo (sin extensión):", "registros");
+  if (!nombre) return;
 
-        Quagga.onDetected(data => {
-            const code = data.codeResult.code;
-            document.getElementById("serie").value = code;
-            Quagga.stop(); // detener escaneo tras lectura exitosa
-            scannerActive = false;
-        });
-    }
-}
+  const data = [["Serie", "Activa kWh", "Potencia kW", "Reactiva kVARh"], ...registros];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Lecturas");
+
+  XLSX.writeFile(wb, nombre + ".xlsx");
+
+  registros = [];
+  localStorage.removeItem("registros");
+  alert("Datos exportados y memoria limpiada.");
+});

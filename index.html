@@ -6,16 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lectura ACE</title>
   <link rel="manifest" href="manifest.json">
-  <!-- Se cambió la referencia a las librerías locales -->
   <script src="libs/html5-qrcode.min.js"></script>
   <script src="libs/xlsx.full.min.js"></script>
   <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js").then(() => {
-      console.log("Service Worker registrado");
-    });
-  }
-</script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js").then(() => {
+        console.log("Service Worker registrado");
+      });
+    }
+  </script>
 </head>
 <body>
   <h1>Registro de Lecturas</h1>
@@ -43,7 +42,17 @@
     <button type="submit">Guardar Lectura</button>
   </form>
 
+  <div class="form-group">
+    <label for="archivo-referencia">Archivo de series esperadas (.xlsx):</label>
+    <input type="file" id="archivo-referencia" accept=".xlsx">
+  </div>
+
   <button id="exportar-btn">Exportar a Excel</button>
+
+  <div id="faltantes-container" style="display:none; margin-top: 20px;">
+    <h3>Series Faltantes</h3>
+    <ul id="faltantes-list" style="text-align:left; max-width: 400px; margin:auto;"></ul>
+  </div>
 
   <script src="script.js"></script>
 </body>

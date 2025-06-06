@@ -1,20 +1,14 @@
 let registros = [];
 let scanner;
 
-// Inicializar el escáner y Service Worker al cargar
 window.onload = () => {
   const guardados = localStorage.getItem("registros");
   if (guardados) {
     registros = JSON.parse(guardados);
   }
   startScanner();
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js');
-  }
 };
 
-// Escanear Serie con Html5Qrcode
 function startScanner() {
   const reader = new Html5Qrcode("reader");
   reader.start(
@@ -24,15 +18,12 @@ function startScanner() {
       document.getElementById("serie-input").value = decodedText;
       reader.stop();
     },
-    (errorMessage) => {
-      // Silencio: no queremos spam de errores
-    }
+    () => {}
   ).catch(err => {
     console.error("Error al iniciar el escáner:", err);
   });
 }
 
-// Guardar fila al enviar el formulario
 document.getElementById("formulario").addEventListener("submit", function(e) {
   e.preventDefault();
 
@@ -55,24 +46,61 @@ document.getElementById("formulario").addEventListener("submit", function(e) {
   startScanner();
 });
 
-// Exportar a Excel
 document.getElementById("exportar-btn").addEventListener("click", () => {
+  const faltantesContainer = document.getElementById("faltantes-container");
+  const faltantesList = document.getElementById("faltantes-list");
+  faltantesContainer.style.display = "none";
+  faltantesList.innerHTML = "";
+
   if (registros.length === 0) {
     alert("No hay datos para exportar.");
     return;
   }
 
-  const nombre = prompt("Nombre del archivo (sin extensión):", "registros");
-  if (!nombre) return;
+  const archivoRef = document.getElementById("archivo-referencia").files[0];
+  if (!archivoRef) {
+    alert("Por favor selecciona un archivo de referencia con las series esperadas.");
+    return;
+  }
 
-  const data = [["Serie", "Activa kWh", "Potencia kW", "Reactiva kVARh"], ...registros];
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Lecturas");
+  const lector = new FileReader();
+  lector.onload = (e) => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
 
-  XLSX.writeFile(wb, nombre + ".xlsx");
+    const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
+    const datos = XLSX.utils.sheet_to_json(primeraHoja, { header: 1 });
 
-  registros = [];
-  localStorage.removeItem("registros");
-  alert("Datos exportados y memoria limpiada.");
+    const seriesEsperadas = datos.map(row => row[0]).filter(Boolean);
+    const seriesCapturadas = registros.map(r => r[0]);
+
+    const faltantes = seriesEsperadas.filter(serie => !seriesCapturadas.includes(serie));
+
+    if (faltantes.length > 0) {
+      faltantes.forEach(f => {
+        const li = document.createElement("li");
+        li.textContent = f;
+        faltantesList.appendChild(li);
+      });
+      faltantesContainer.style.display = "block";
+      alert("Faltan series por registrar. Revisa el listado debajo.");
+      return;
+    }
+
+    const nombre = prompt("Nombre del archivo (sin extensión):", "registros");
+    if (!nombre) return;
+
+    const dataExport = [["Serie", "Activa kWh", "Potencia kW", "Reactiva kVARh"], ...registros];
+    const ws = XLSX.utils.aoa_to_sheet(dataExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Lecturas");
+
+    XLSX.writeFile(wb, nombre + ".xlsx");
+
+    registros = [];
+    localStorage.removeItem("registros");
+    alert("Datos exportados y memoria limpiada.");
+  };
+
+  lector.readAsArrayBuffer(archivoRef);
 });
